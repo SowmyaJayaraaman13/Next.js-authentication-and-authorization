@@ -15,6 +15,9 @@ const firebaseConfig = {
   if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
     // const db = firebase.firestore()
+    firebase.firestore().settings({
+      ignoreUndefinedProperties: true
+    })
   }
 
   const db = firebase.firestore()

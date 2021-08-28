@@ -19,6 +19,10 @@ export const tableData = [
         field: 'emp_designation',
     },
     {
+        headerName: 'Role',
+        field: 'roleId',
+    },
+    {
         headerName: 'Contact',
         field: 'contact',
     },
@@ -29,10 +33,6 @@ export const tableData = [
     {
         headerName: 'Actions',
         field: 'actions',
-    },
-    {
-        headerName: 'Role',
-        field: 'roleId',
     }
 
 ]

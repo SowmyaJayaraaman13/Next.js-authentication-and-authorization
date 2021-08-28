@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { tableData } from '../constants/table-constants.js';
-import {db} from '../firebase/firebaseConfig';
+import { db } from '../firebase/firebaseConfig';
 import EditIcon from '@material-ui/icons/Edit';
 import DeleteIcon from '@material-ui/icons/Delete';
 import { useStyles } from '../styles/employeeList.css';
@@ -20,17 +20,19 @@ import SearchIcon from '@material-ui/icons/Search';
 import Input from '@material-ui/core/Input';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import { useRouter } from 'next/router'
-import { useSession } from 'next-auth/client'
+import { roles } from '../constants/constants';
+import Select from '@material-ui/core/Select';
+import NativeSelect from '@material-ui/core/NativeSelect';
 import { getEmailAuthoriztion } from '../Utilities/helper';
+import { useSession, getSession } from 'next-auth/client';
 
 
 
-function Manager() {
+function Users() {
 
     const classes = useStyles();
     const router = useRouter();
     const [session] = useSession();
-
 
     const [rowData, setRowData] = useState([]);
     const [visibleRows, setVisibleRows] = useState({
@@ -51,8 +53,6 @@ function Manager() {
         contact: '',
         email: ''
     });
-    const [showComponent, setShowComponent] = useState(false);
-
 
     const [searchField, setSearchField] = useState('');
     const [searchTracker, setSearchTracker] = useState(false);
@@ -63,9 +63,18 @@ function Manager() {
     const NEXT = 'next';
 
 
+
+    const [showComponent, setShowComponent] = useState(false);
+    const [roleIds, setRoleIds] = useState([])
+
     const fetchQuery = (limitLabel, limitValue = 5, from = 'others') => {
 
         var query = db.collection("employees");
+
+        if(roleIds && roleIds.length>0){
+            query = query.where('roleId', 'in', roleIds);
+        }
+        
         if (searchField && searchValue[searchField]) {
             query = query.where(searchField, '==', `${searchValue[searchField]}`)
         }
@@ -101,10 +110,21 @@ function Manager() {
         })
     }
 
+    
+    useEffect(() => {
+        async function getUsers() {
+            const data = await fetch("http://localhost:3000/api/getUsers")
+            const userDetails = await data.json()
+            setRoleIds(userDetails.roleIds);
+            setShowComponent(userDetails.showComponent)
+        }
+        getUsers();
+    }, [])
+
 
     useEffect(() => {
         getRowData();
-    }, [])
+    }, [roleIds])
 
 
     useEffect(() => {
@@ -231,18 +251,8 @@ function Manager() {
     }
 
     const editHandler = (row) => {
-        router.push({ pathname: '/register-employee', state: row });
+        router.push({ pathname: '/registration', query: {docId: row.id} });
     }
-
-    
-    useEffect(() =>{
-        async function callme(){
-            await getEmailAuthoriztion(session.user.email, 'manager').then(resp =>{
-                setShowComponent(resp);
-            })
-        }
-        callme();
-    },[session?.user?.email])
 
 
     return (
@@ -260,9 +270,7 @@ function Manager() {
                                 {
                                     tableData.map((item, index) => (
                                         <TableCell key={index}>
-                                            {
-                                                item.headerName !== 'Role' ?
-                                                <div>
+                                            <div>
                                                 <strong>{item.headerName}</strong>
                                                 {item.headerName !== 'S.No' && item.headerName !== 'Actions' ?
                                                     <div>
@@ -275,9 +283,6 @@ function Manager() {
 
 
                                             </div>
-                                            : null
-                                            }
-                                            
 
                                         </TableCell>
                                     ))
@@ -324,9 +329,10 @@ function Manager() {
                                                                 <EditIcon style={{ cursor: 'pointer', marginRight: '10px', color: '#22d1dd' }} onClick={() => editHandler(data)} />
                                                                 <DeleteIcon style={{ cursor: 'pointer', marginLeft: '10px', color: '#22d1dd' }} onClick={() => deleteHandler(data)} />
                                                             </div> :
-                                                            item.headerName !== 'Role' ?
-                                                            data[item.field]:
-                                                            ''}
+                                                            item.headerName === 'Role' ? 
+                                                                Object.keys(roles).filter(key => roles[key] === data[item.field])[0]
+                                                                :
+                                                                data[item.field]}
                                                         </TableCell>
                                                     ))
                                                 }
@@ -365,7 +371,8 @@ function Manager() {
 
             </>
 
-        </div>:
+        </div> 
+        :
          <div style={{backgroundColor: 'cyan', color: 'black', width: '50%', margin: '0px auto', padding: '10px' }}>
              <h2>Permission Denied. Please contact your Administrator.</h2>
      </div>
@@ -374,7 +381,36 @@ function Manager() {
     )
 }
 
-export default Manager
+
+// export async function getServerSideProps(context) {
+//     const session = await getSession(context)
+//     let userDetails;
+//     if(session && Object.values(session).length>0){
+
+//     const data = await fetch("http://localhost:3000/api/validateEmail?" + new URLSearchParams({
+//         tableAccess: true,
+//         email: session.user.email
+//     }))
+//     userDetails = await data.json()
+//     }
+
+//     if(userDetails && userDetails.roleIds){
+//     return {
+//         props: {
+//             showComponent: userDetails.showComponent,
+//             roleIds: userDetails.roleIds
+//         }
+//     }
+// }
 
 
-Manager.auth = true
+// return {
+//     props: {}
+// }
+
+// }
+
+
+export default Users
+
+Users.auth = true

@@ -4,7 +4,6 @@ import styles from '../styles/Home.module.css'
 import { signIn, signOut, useSession } from 'next-auth/client'
 
 export default function BasicAuth() {
-  console.log(useSession())
   const [ session, loading ] = useSession()
   return (
     <div className={styles.container}>
